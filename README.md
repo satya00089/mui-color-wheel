@@ -107,7 +107,7 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 ## 📄 License
 
-MIT © [Satya00089](LICENSE)
+MIT © [satya subudhi](LICENSE)
 
 ---
 

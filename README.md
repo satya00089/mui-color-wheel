@@ -1,9 +1,4 @@
 
-
-Here's a compelling repository description for your `mui-color-wheel` package:
-
----
-
 # MUI Color Wheel 🎨
 
 A beautiful, customizable color picker component for Material-UI featuring an intuitive color wheel interface. Built with React and TypeScript.
@@ -126,4 +121,3 @@ MIT © [Satya00089](LICENSE)
 6. **Complete Documentation**: Mentions demo link, contributing guidelines, and license
 7. **SEO Optimized**: Includes relevant keywords (Material-UI, color picker, TypeScript, etc.)
 
-This description will help your package stand out on both GitHub and npm while clearly communicating its value to potential users.

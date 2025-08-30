@@ -1,1 +1,0 @@
-{"version":3,"file":"ColorSwatch.d.ts","sourceRoot":"","sources":["../../src/components/ColorSwatch.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAG1B,UAAU,gBAAgB;IACxB,KAAK,EAAE,MAAM,CAAC;IACd,OAAO,EAAE,MAAM,IAAI,CAAC;CACrB;AAED,eAAO,MAAM,WAAW,EAAE,KAAK,CAAC,EAAE,CAAC,gBAAgB,CAkBlD,CAAC"}

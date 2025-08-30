@@ -1,0 +1,66 @@
+[02:52:51.389] [DEBUG] Extracting storybook data...
+[02:52:51.389] [DEBUG] Getting Storybook info...
+[02:52:51.391] [DEBUG] Loading main config...
+[02:52:51.712] [DEBUG] Getting stories paths...
+[02:52:51.734] [DEBUG] Getting package manager...
+[02:52:53.734] [DEBUG] Getting Storybook version...
+[02:52:53.736] [INFO] 🔎 checking possible migrations..
+[02:52:54.092] [DEBUG] Running eslintPlugin migration checks
+[02:52:54.098] [DEBUG] End of eslintPlugin migration checks
+[02:52:54.098] [DEBUG] Running addon-mdx-gfm-remove migration checks
+[02:52:54.099] [DEBUG] End of addon-mdx-gfm-remove migration checks
+[02:52:54.099] [DEBUG] Running addon-storysource-code-panel migration checks
+[02:52:54.099] [DEBUG] End of addon-storysource-code-panel migration checks
+[02:52:54.099] [DEBUG] Running initial-globals migration checks
+[02:52:54.120] [DEBUG] End of initial-globals migration checks
+[02:52:54.120] [DEBUG] Running addon-a11y-addon-test migration checks
+[02:52:54.120] [DEBUG] End of addon-a11y-addon-test migration checks
+[02:52:54.120] [DEBUG] Running consolidated-imports migration checks
+[02:52:54.121] [DEBUG] End of consolidated-imports migration checks
+[02:52:54.121] [DEBUG] Running addon-experimental-test migration checks
+[02:52:54.121] [DEBUG] Getting installed version for @storybook/experimental-addon-test...
+[02:52:57.262] [DEBUG] End of addon-experimental-test migration checks
+[02:52:57.263] [DEBUG] Running rnstorybook-config migration checks
+[02:52:57.263] [DEBUG] End of rnstorybook-config migration checks
+[02:52:57.263] [DEBUG] Running remove-addon-interactions migration checks
+[02:52:57.264] [DEBUG] End of remove-addon-interactions migration checks
+[02:52:57.264] [DEBUG] Running renderer-to-framework migration checks
+[02:52:57.265] [DEBUG] End of renderer-to-framework migration checks
+[02:52:57.265] [DEBUG] Running remove-essential-addons migration checks
+[02:52:57.265] [DEBUG] End of remove-essential-addons migration checks
+[02:52:57.266] [DEBUG] Running addon-a11y-parameters migration checks
+[02:52:57.266] [DEBUG] End of addon-a11y-parameters migration checks
+[02:52:57.266] [DEBUG] Running remove-docs-autodocs migration checks
+[02:52:57.270] [DEBUG] End of remove-docs-autodocs migration checks
+[02:52:57.270] [DEBUG] Running wrap-require migration checks
+[02:52:57.275] [DEBUG] End of wrap-require migration checks
+[02:52:57.275] [INFO] 
+[02:52:57.679] [INFO] If you'd like to run the migrations again, you can do so by running 'npx storybook automigrate'
+
+The automigrations try to migrate common patterns in your project, but might not contain everything needed to migrate to the latest version of Storybook.
+
+Please check the changelog and migration guide for manual migrations and more information: https://storybook.js.org/docs/migration-guide?ref=upgrade
+And reach out on Discord if you need help: https://discord.gg/storybook
+[02:52:57.679] [INFO] No migrations were applicable to your project
+[02:52:58.056] [INFO] If you'd like to run the migrations again, you can do so by running 'npx storybook automigrate'
+
+The automigrations try to migrate common patterns in your project, but might not contain everything needed to migrate to the latest version of Storybook.
+
+Please check the changelog and migration guide for manual migrations and more information: https://storybook.js.org/docs/migration-guide?ref=upgrade
+And reach out on Discord if you need help: https://discord.gg/storybook
+[02:52:58.460] [INFO] 
+[02:52:58.951] [INFO] Checking the health of your Storybook..
+[02:52:59.414] [DEBUG] Getting Storybook info...
+[02:52:59.416] [DEBUG] Loading main config...
+[02:52:59.425] [DEBUG] Getting stories paths...
+[02:52:59.426] [DEBUG] Getting package manager...
+[02:52:59.426] [DEBUG] Getting Storybook version...
+[02:53:03.103] [WARN] .storybook: 1 issue found
+[02:53:03.494] [INFO] The "storybook" package was not found in your package.json.
+Installing "storybook" as a direct dev dependency in your package.json is required.
+[02:53:03.494] [INFO] Missing Storybook Dependency
+[02:53:03.934] [INFO] The "storybook" package was not found in your package.json.
+Installing "storybook" as a direct dev dependency in your package.json is required.
+[02:53:04.675] [INFO] Storybook doctor is complete!
+[02:53:05.375] [INFO] You can always recheck the health of your project(s) by running:
+npx storybook doctor

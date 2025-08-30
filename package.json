@@ -8,6 +8,10 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/satya00089/mui-color-wheel.git"
+  },
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",

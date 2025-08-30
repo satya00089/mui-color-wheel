@@ -433,7 +433,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({
         
         <Grid container spacing={1}>
           {presetColors.map((swatch, index) => (
-            <Grid item key={index}>
+            <Grid key={index}>
               <ColorSwatch
                 color={swatch}
                 onClick={() => handlePresetClick(swatch)}

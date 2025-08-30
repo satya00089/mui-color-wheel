@@ -3,7 +3,7 @@
 
 A beautiful, customizable color picker component for Material-UI featuring an intuitive color wheel interface. Built with React and TypeScript.
 
-![Preview](https://img.shields.io/badge/Material--UI-v5-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-supported-green) ![Size](https://img.shields.io/bundlephobia/minzip/mui-color-wheel)
+![Preview](https://img.shields.io/badge/Material--UI-v7-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-supported-green) ![Size](https://img.shields.io/bundlephobia/minzip/mui-color-wheel)
 
 ## ✨ Features
 
@@ -99,7 +99,7 @@ function App() {
 
 ## 📱 Demo
 
-Check out the interactive demo: [mui-color-wheel-demo.vercel.app](https://mui-color-wheel-demo.vercel.app)
+Check out the interactive demo: [mui-color-wheel.vercel.app](https://mui-color-wheel.vercel.app/)
 
 ## 🤝 Contributing
 

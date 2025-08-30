@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ColorWheel } from '../src/components/ColorWheel';
+import { ColorWheel } from '../ColorWheel';
 
 export default {
   title: 'ColorWheel',

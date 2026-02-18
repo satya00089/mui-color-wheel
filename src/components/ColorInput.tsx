@@ -22,12 +22,13 @@ export const ColorInput: React.FC<ColorInputProps> = ({
       onChange={(e) => onChange(e.target.value)}
       fullWidth
       margin="normal"
+      size="small"
       error={!isValid}
       helperText={!isValid ? "Invalid hex color" : ""}
       InputProps={{
         endAdornment: onEyedropper && (
           <InputAdornment position="end">
-            <IconButton onClick={onEyedropper} size="small">
+            <IconButton onClick={onEyedropper} size="small" aria-label="Pick color from screen">
               <Colorize />
             </IconButton>
           </InputAdornment>

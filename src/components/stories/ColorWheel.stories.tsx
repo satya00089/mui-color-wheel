@@ -8,41 +8,66 @@ export default {
 
 export const Basic = () => {
   const [color, setColor] = useState('#3f51b5');
-  
+
   return (
-    <div>
-      <p>Selected color: {color}</p>
+    <div style={{ padding: 24 }}>
+      <p style={{ marginBottom: 12 }}>Selected color: <strong>{color}</strong></p>
       <ColorWheel color={color} onChange={setColor} />
     </div>
   );
 };
 
-export const WithCustomPresets = () => {
+export const SmallSize = () => {
   const [color, setColor] = useState('#e91e63');
-  
+
   return (
-    <div>
-      <p>Selected color: {color}</p>
-      <ColorWheel 
-        color={color} 
-        onChange={setColor}
-        presetColors={['#e91e63', '#9c27b0', '#673ab7', '#3f51b5']}
-      />
+    <div style={{ padding: 24 }}>
+      <p style={{ marginBottom: 12 }}>Selected color: <strong>{color}</strong></p>
+      <ColorWheel color={color} onChange={setColor} size="small" label="Small Picker" />
     </div>
   );
 };
 
-export const WithoutOpacity = () => {
+export const LargeSize = () => {
   const [color, setColor] = useState('#4caf50');
-  
+
   return (
-    <div>
-      <p>Selected color: {color}</p>
-      <ColorWheel 
-        color={color} 
-        onChange={setColor}
-        showOpacity={false}
-      />
+    <div style={{ padding: 24 }}>
+      <p style={{ marginBottom: 12 }}>Selected color: <strong>{color}</strong></p>
+      <ColorWheel color={color} onChange={setColor} size="large" label="Large Picker" />
+    </div>
+  );
+};
+
+export const RgbFormat = () => {
+  const [color, setColor] = useState('#ff9800');
+
+  return (
+    <div style={{ padding: 24 }}>
+      <p style={{ marginBottom: 12 }}>Selected color: <strong>{color}</strong></p>
+      <ColorWheel color={color} onChange={setColor} format="rgb" label="RGB Picker" />
+    </div>
+  );
+};
+
+export const HslFormat = () => {
+  const [color, setColor] = useState('#9c27b0');
+
+  return (
+    <div style={{ padding: 24 }}>
+      <p style={{ marginBottom: 12 }}>Selected color: <strong>{color}</strong></p>
+      <ColorWheel color={color} onChange={setColor} format="hsl" label="HSL Picker" />
+    </div>
+  );
+};
+
+export const Disabled = () => {
+  const [color, setColor] = useState('#2196f3');
+
+  return (
+    <div style={{ padding: 24 }}>
+      <p style={{ marginBottom: 12 }}>Disabled — color: <strong>{color}</strong></p>
+      <ColorWheel color={color} onChange={setColor} disabled />
     </div>
   );
 };

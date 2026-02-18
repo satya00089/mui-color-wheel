@@ -1,446 +1,308 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
+  alpha,
   Box,
   Popover,
   Button,
   Typography,
-  useTheme,
-  Grid,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { ColorInput } from './ColorInput';
-import { ColorSlider } from './ColorSlider';
-import { ColorSwatch } from './ColorSwatch';
 import { useColorState } from '../hooks/useColorState';
 import { colorConverters } from '../utils/colorConverters';
-import { ColorWheelProps, ColorFormat, ComponentSize } from '../types';
+import { ColorWheelProps } from '../types';
+
+// Canvas CSS + buffer size (px). Keeping them equal avoids all CSS→buffer scaling.
+const CANVAS_SIZE = 204;
+// Wheel fills 96 % of the canvas so the indicator dot stays inside.
+const WHEEL_RADIUS = CANVAS_SIZE * 0.47;
 
 const PickerButton = styled(Button)(({ theme }) => ({
-  width: 50,
-  height: 50,
   minWidth: 'auto',
   padding: 0,
   borderRadius: theme.shape.borderRadius,
-  border: `1px solid ${theme.palette.divider}`,
+  border: `2px solid ${theme.palette.divider}`,
+  boxShadow: theme.shadows[1],
+  '&:hover': {
+    borderColor: theme.palette.text.secondary,
+    boxShadow: theme.shadows[3],
+  },
+  '&.Mui-focusVisible': {
+    outline: `2px solid ${theme.palette.primary.main}`,
+    outlineOffset: 2,
+  },
 }));
 
 const PickerPopover = styled(Popover)(({ theme }) => ({
   '& .MuiPaper-root': {
     padding: theme.spacing(2),
-    borderRadius: theme.shape.borderRadius,
-    minWidth: 280,
+    borderRadius: Number(theme.shape.borderRadius) * 2,
+    width: 204,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: theme.shadows[6],
   },
-}));
-
-const ColorPreview = styled(Box)(({ theme }) => ({
-  width: '100%',
-  height: 60,
-  borderRadius: theme.shape.borderRadius,
-  marginBottom: theme.spacing(2),
-  border: `1px solid ${theme.palette.divider}`,
-}));
-
-const ColorWheelCanvas = styled('canvas')(({ theme }) => ({
-  width: '100%',
-  height: 200,
-  borderRadius: theme.shape.borderRadius,
-  marginBottom: theme.spacing(2),
-  cursor: 'crosshair',
-  border: `1px solid ${theme.palette.divider}`,
 }));
 
 const SizeStyles = {
-  small: {
-    width: 40,
-    height: 40,
-  },
-  medium: {
-    width: 50,
-    height: 50,
-  },
-  large: {
-    width: 60,
-    height: 60,
-  },
+  small:  { width: 36, height: 36 },
+  medium: { width: 44, height: 44 },
+  large:  { width: 56, height: 56 },
 };
 
 export const ColorWheel: React.FC<ColorWheelProps> = ({
   color,
   onChange,
-  presetColors = [
-    '#f44336', '#e91e63', '#9c27b0', '#673ab7',
-    '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4',
-    '#009688', '#4caf50', '#8bc34a', '#cddc39',
-    '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'
-  ],
   format = 'hex',
-  showOpacity = true,
-  showEyedropper = true,
   disabled = false,
   size = 'medium',
-  label = "Color Picker",
+  label = 'Color Picker',
 }) => {
-  const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  const { 
-    hex, 
-    setHex, 
-    rgb, 
-    setRgb, 
-    hsl, 
-    setHsl, 
-    opacity, 
-    setOpacity,
+  const isDragging = useRef(false);
+
+  const {
+    hex,
+    setHex,
+    setRgb,
+    hsl,
+    setHsl,
+    isValidHex,
     outputColor,
-    isValidHex 
   } = useColorState(color, format);
 
   const open = Boolean(anchorEl);
   const id = open ? 'color-wheel-popover' : undefined;
 
-  useEffect(() => {
-    // Initialize canvas
+  // ── Canvas drawing ────────────────────────────────────────────────────────
+
+  const redraw = useCallback((h: number, s: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    // Set canvas size
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    
-    // Draw color wheel
-    drawColorWheel(ctx, canvas.width, canvas.height);
-    
-    // Draw current color indicator
-    drawColorIndicator(ctx, hsl.h, hsl.s, canvas.width, canvas.height);
-  }, [hsl]);
 
-  const drawColorWheel = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.4;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-    
-    // Draw color wheel
-    for (let angle = 0; angle < 360; angle += 1) {
-      const startAngle = (angle - 1) * Math.PI / 180;
-      const endAngle = angle * Math.PI / 180;
-      
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-      ctx.closePath();
-      
-      const gradient = ctx.createRadialGradient(
-        centerX, centerY, 0,
-        centerX, centerY, radius
-      );
-      
-      gradient.addColorStop(0, 'white');
-      gradient.addColorStop(1, `hsl(${angle}, 100%, 50%)`);
-      
-      ctx.fillStyle = gradient;
-      ctx.fill();
+    const cx = CANVAS_SIZE / 2;
+    const cy = CANVAS_SIZE / 2;
+
+    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+    // Pixel-exact wheel: every pixel gets its colour computed from polar coords.
+    const imageData = ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
+    for (let py = 0; py < CANVAS_SIZE; py++) {
+      for (let px = 0; px < CANVAS_SIZE; px++) {
+        const dx = px - cx;
+        const dy = py - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > WHEEL_RADIUS) continue;
+
+        const hue = ((Math.atan2(dy, dx) * 180) / Math.PI + 360 + 90) % 360;
+        const sat = dist / WHEEL_RADIUS; // 0–1 → centre is white, edge is pure hue
+        const rgb = colorConverters.hslToRgb(
+          Math.round(hue),
+          Math.round(sat * 100),
+          50,
+        );
+        const i = (py * CANVAS_SIZE + px) * 4;
+        imageData.data[i]     = rgb.r;
+        imageData.data[i + 1] = rgb.g;
+        imageData.data[i + 2] = rgb.b;
+        imageData.data[i + 3] = 255;
+      }
     }
-  };
+    ctx.putImageData(imageData, 0, 0);
 
-  const drawColorIndicator = (
-    ctx: CanvasRenderingContext2D, 
-    hue: number, 
-    saturation: number, 
-    width: number, 
-    height: number
-  ) => {
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.4;
-    
-    // Convert polar to cartesian coordinates
-    const angle = (hue - 90) * Math.PI / 180;
-    const distance = radius * (saturation / 100);
-    const x = centerX + distance * Math.cos(angle);
-    const y = centerY + distance * Math.sin(angle);
-    
-    // Draw indicator
+    // Indicator dot
+    const angle = ((h - 90) * Math.PI) / 180;
+    const dotDist = WHEEL_RADIUS * (s / 100);
+    const ix = cx + dotDist * Math.cos(angle);
+    const iy = cy + dotDist * Math.sin(angle);
+
     ctx.beginPath();
-    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.arc(ix, iy, 7, 0, Math.PI * 2);
     ctx.fillStyle = 'white';
     ctx.fill();
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
-  };
+  }, []);
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+  // Called by MUI's Popover after its enter-transition finishes and the canvas
+  // DOM node is guaranteed to be in the document. This is the only reliable
+  // moment to initialise the buffer and draw for the first time.
+  const handlePopoverEntered = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = Math.min(canvas.width, canvas.height) * 0.4;
-    
-    // Calculate distance from center
-    const dx = x - centerX;
-    const dy = y - centerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // Check if click is within the color wheel
-    if (distance <= radius) {
-      // Calculate angle (hue)
-      let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-      if (angle < 0) angle += 360;
-      
-      // Calculate saturation
-      const saturation = Math.min(100, Math.round((distance / radius) * 100));
-      
-      // Update HSL
-      const newHsl = { h: Math.round(angle), s: saturation, l: hsl.l };
+    canvas.width  = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    redraw(hsl.h, hsl.s);
+  }, [hsl.h, hsl.s, redraw]);
+
+  // Re-draw when hsl changes while the popover is already open (e.g. hex input).
+  useEffect(() => {
+    if (!open) return;
+    redraw(hsl.h, hsl.s);
+  }, [open, hsl.h, hsl.s, redraw]);
+
+  // ── Color pick from canvas coords ────────────────────────────────────────
+
+  const pickFromEvent = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+
+      // CANVAS_SIZE === rect.width === rect.height (1-to-1), but we keep the
+      // scale factors so the code stays correct if someone changes CANVAS_SIZE.
+      const scaleX = CANVAS_SIZE / rect.width;
+      const scaleY = CANVAS_SIZE / rect.height;
+      const px = (clientX - rect.left) * scaleX;
+      const py = (clientY - rect.top)  * scaleY;
+
+      const cx = CANVAS_SIZE / 2;
+      const cy = CANVAS_SIZE / 2;
+      const dx = px - cx;
+      const dy = py - cy;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > WHEEL_RADIUS) return;
+
+      let hue = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+      if (hue < 0) hue += 360;
+      const sat = Math.min(100, Math.round((dist / WHEEL_RADIUS) * 100));
+
+      // Keep current lightness so the wheel is predictable
+      const newHsl = { h: Math.round(hue), s: sat, l: hsl.l };
       setHsl(newHsl);
-      
-      // Convert to RGB
+
       const newRgb = colorConverters.hslToRgb(newHsl.h, newHsl.s, newHsl.l);
       setRgb(newRgb);
-      
-      // Convert to HEX
+
       const newHex = colorConverters.rgbToHex(newRgb.r, newRgb.g, newRgb.b);
       setHex(newHex);
-      
-      // Trigger onChange
       onChange(newHex);
-    }
+
+      redraw(newHsl.h, newHsl.s);
+    },
+    [hsl.l, setHsl, setRgb, setHex, onChange, redraw]
+  );
+
+  // ── Pointer event handlers (click + drag) ────────────────────────────────
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    isDragging.current = true;
+    pickFromEvent(e.clientX, e.clientY);
   };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging.current) return;
+    pickFromEvent(e.clientX, e.clientY);
+  };
+
+  const handleMouseUp = () => { isDragging.current = false; };
+
+  // ── Hex input ─────────────────────────────────────────────────────────────
 
   const handleHexChange = (newHex: string) => {
     setHex(newHex);
-    if (isValidHex(newHex)) {
-      onChange(newHex);
-      
-      // Update RGB
-      const newRgb = colorConverters.hexToRgb(newHex);
-      if (newRgb) {
-        setRgb(newRgb);
-        
-        // Update HSL
-        const newHsl = colorConverters.rgbToHsl(newRgb.r, newRgb.g, newRgb.b);
-        setHsl(newHsl);
-      }
-    }
-  };
-
-  const handleHueChange = (value: number) => {
-    const newHsl = { ...hsl, h: value };
-    setHsl(newHsl);
-    
-    // Convert to RGB
-    const newRgb = colorConverters.hslToRgb(newHsl.h, newHsl.s, newHsl.l);
-    setRgb(newRgb);
-    
-    // Convert to HEX
-    const newHex = colorConverters.rgbToHex(newRgb.r, newRgb.g, newRgb.b);
-    setHex(newHex);
-    
-    // Trigger onChange
+    if (!isValidHex(newHex)) return;
     onChange(newHex);
-  };
-
-  const handleSaturationChange = (value: number) => {
-    const newHsl = { ...hsl, s: value };
-    setHsl(newHsl);
-    
-    // Convert to RGB
-    const newRgb = colorConverters.hslToRgb(newHsl.h, newHsl.s, newHsl.l);
-    setRgb(newRgb);
-    
-    // Convert to HEX
-    const newHex = colorConverters.rgbToHex(newRgb.r, newRgb.g, newRgb.b);
-    setHex(newHex);
-    
-    // Trigger onChange
-    onChange(newHex);
-  };
-
-  const handleLightnessChange = (value: number) => {
-    const newHsl = { ...hsl, l: value };
-    setHsl(newHsl);
-    
-    // Convert to RGB
-    const newRgb = colorConverters.hslToRgb(newHsl.h, newHsl.s, newHsl.l);
-    setRgb(newRgb);
-    
-    // Convert to HEX
-    const newHex = colorConverters.rgbToHex(newRgb.r, newRgb.g, newRgb.b);
-    setHex(newHex);
-    
-    // Trigger onChange
-    onChange(newHex);
-  };
-
-  const handleOpacityChange = (value: number) => {
-    setOpacity(value);
-    // For simplicity, we're not changing the hex value for opacity
-    // In a real implementation, you might want to convert to rgba or hex8
-  };
-
-  const handlePresetClick = (presetColor: string) => {
-    onChange(presetColor);
-    setHex(presetColor);
-    
-    // Update RGB
-    const newRgb = colorConverters.hexToRgb(presetColor);
+    const newRgb = colorConverters.hexToRgb(newHex);
     if (newRgb) {
       setRgb(newRgb);
-      
-      // Update HSL
       const newHsl = colorConverters.rgbToHsl(newRgb.r, newRgb.g, newRgb.b);
       setHsl(newHsl);
     }
   };
 
-  const handleEyedropper = async () => {
-    if (!('EyeDropper' in window)) {
-      alert('Your browser does not support the EyeDropper API');
-      return;
-    }
+  // ── Button ────────────────────────────────────────────────────────────────
 
-    try {
-      // @ts-ignore - EyeDropper is not in TypeScript types yet
-      const eyeDropper = new EyeDropper();
-      const result = await eyeDropper.open();
-      const srgbHex = result.sRGBHex;
-      
-      onChange(srgbHex);
-      setHex(srgbHex);
-      
-      // Update RGB
-      const newRgb = colorConverters.hexToRgb(srgbHex);
-      if (newRgb) {
-        setRgb(newRgb);
-        
-        // Update HSL
-        const newHsl = colorConverters.rgbToHsl(newRgb.r, newRgb.g, newRgb.b);
-        setHsl(newHsl);
-      }
-    } catch (e) {
-      console.error('EyeDropper error:', e);
-    }
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    setAnchorEl(e.currentTarget);
   };
+
+  const handleClose = () => setAnchorEl(null);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
       <PickerButton
         aria-describedby={id}
-        onClick={handleClick}
+        aria-label={label}
+        onClick={handleButtonClick}
         disabled={disabled}
         sx={{
           backgroundColor: color,
+          borderColor: alpha(color, 0.6),
           ...SizeStyles[size],
         }}
       />
-      
+
       <PickerPopover
         id={id}
         open={open}
         anchorEl={anchorEl}
         onClose={handleClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        TransitionProps={{ onEntered: handlePopoverEntered }}
       >
-        <Typography variant="subtitle1" gutterBottom>
-          {label}
-        </Typography>
-        
-        <ColorPreview sx={{ backgroundColor: color }} />
-        
-        <ColorWheelCanvas
-          ref={canvasRef}
-          onClick={handleCanvasClick}
-        />
-        
+        {/*
+         * The canvas carries its own fixed px size so there is no question
+         * about what size it is. border-radius 50% turns it into a visible
+         * circle; the transparent pixels outside WHEEL_RADIUS are already
+         * invisible so the circle looks clean with no square background.
+         */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.5 }}>
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            style={{
+              width: CANVAS_SIZE,
+              height: CANVAS_SIZE,
+              borderRadius: '50%',
+              cursor: 'crosshair',
+              display: 'block',
+            }}
+          />
+        </Box>
+
         <ColorInput
           value={hex}
           onChange={handleHexChange}
           isValid={isValidHex(hex)}
-          onEyedropper={showEyedropper ? handleEyedropper : undefined}
         />
-        
-        <ColorSlider
-          label="Hue"
-          value={hsl.h}
-          min={0}
-          max={360}
-          onChange={handleHueChange}
-          color={theme.palette.primary.main}
-        />
-        
-        <ColorSlider
-          label="Saturation"
-          value={hsl.s}
-          min={0}
-          max={100}
-          onChange={handleSaturationChange}
-          color={theme.palette.secondary.main}
-        />
-        
-        <ColorSlider
-          label="Lightness"
-          value={hsl.l}
-          min={0}
-          max={100}
-          onChange={handleLightnessChange}
-          color={theme.palette.success.main}
-        />
-        
-        {showOpacity && (
-          <ColorSlider
-            label="Opacity"
-            value={opacity}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={handleOpacityChange}
-            color={theme.palette.grey[500]}
-          />
+
+        {format !== 'hex' && (
+          <Box
+            sx={{
+              mt: 0.5,
+              px: 1.5,
+              py: 1,
+              borderRadius: 1,
+              backgroundColor: 'action.hover',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" display="block">
+              {format.toUpperCase()}
+            </Typography>
+            <Typography
+              variant="body2"
+              fontFamily="monospace"
+              sx={{ wordBreak: 'break-all' }}
+            >
+              {outputColor}
+            </Typography>
+          </Box>
         )}
-        
-        <Typography variant="body2" gutterBottom>
-          Output ({format}): {outputColor}
-        </Typography>
-        
-        <Typography variant="body2" gutterBottom sx={{ mt: 2 }}>
-          Preset Colors:
-        </Typography>
-        
-        <Grid container spacing={1}>
-          {presetColors.map((swatch, index) => (
-            <Grid key={index}>
-              <ColorSwatch
-                color={swatch}
-                onClick={() => handlePresetClick(swatch)}
-              />
-            </Grid>
-          ))}
-        </Grid>
       </PickerPopover>
     </>
   );

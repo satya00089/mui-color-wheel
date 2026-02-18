@@ -1,6 +1,6 @@
 {
   "name": "mui-color-wheel",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A beautiful, customizable color picker component for Material-UI featuring an intuitive color wheel interface",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
